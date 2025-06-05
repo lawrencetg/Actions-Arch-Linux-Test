@@ -3,7 +3,7 @@ on:
     types: started
 jobs:
   prepare_release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.event.repository.owner.id == github.event.sender.id
     steps:
     - name: Get release tag
@@ -27,7 +27,7 @@ jobs:
 
   build_alpine:
     needs: prepare_release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.event.repository.owner.id == github.event.sender.id
     steps:
     - name: Checkout
@@ -44,7 +44,6 @@ jobs:
         sed -i -e 's/^(cat fa-toolchain/# (cat fa-toolchain/g' install.sh
         sed -i -e 's/^(tar xf fa-toolchain/# (tar xf fa-toolchain/g' install.sh
         sudo -E bash ./install.sh
-        sudo -E update-alternatives --install $(which python) python /usr/bin/python2.7 20
         sudo -E git config --global user.name 'GitHub Actions'
         sudo -E git config --global user.email 'noreply@github.com'
         mkdir -p ./artifact
@@ -56,9 +55,9 @@ jobs:
       run: |
         mkdir project
         cd project
-        wget https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/aarch64/alpine-minirootfs-3.21.3-aarch64.tar.gz
+        wget https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/aarch64/alpine-minirootfs-3.22.0-aarch64.tar.gz
         mkdir rootfs
-        sudo -E tar xzfp alpine-minirootfs-3.21.3-aarch64.tar.gz --numeric-owner --same-owner -C rootfs
+        sudo -E tar xzfp alpine-minirootfs-3.22.0-aarch64.tar.gz --numeric-owner --same-owner -C rootfs
 
     - name: Apply customizations
       run: |
@@ -96,12 +95,12 @@ jobs:
 
   build_img:
     needs: [prepare_release,build_alpine]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.event.repository.owner.id == github.event.sender.id
 
     strategy:
       matrix:
-        CPU: [rk3328, rk3528, rk3399, rk3566, rk3568, rk3588]
+        CPU: [rk3328, rk3528, rk3399, rk3566, rk3568, rk3576, rk3588]
     steps:
     - name: Checkout
       uses: actions/checkout@main
@@ -117,7 +116,6 @@ jobs:
         sed -i -e 's/^(cat fa-toolchain/# (cat fa-toolchain/g' install.sh
         sed -i -e 's/^(tar xf fa-toolchain/# (tar xf fa-toolchain/g' install.sh
         sudo -E bash ./install.sh
-        sudo -E update-alternatives --install $(which python) python /usr/bin/python2.7 20
         sudo -E git config --global user.name 'GitHub Actions'
         sudo -E git config --global user.email 'noreply@github.com'
         mkdir -p ./artifact
@@ -160,6 +158,10 @@ jobs:
           KERNEL_VARIANT=vendor
           ;;
         rk3566)
+          BRANCH=kernel-6.1.y
+          KERNEL_VARIANT=vendor
+          ;;
+        rk3576)
           BRANCH=kernel-6.1.y
           KERNEL_VARIANT=vendor
           ;;
