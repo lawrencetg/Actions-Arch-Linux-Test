@@ -12,7 +12,7 @@
 ### 定制 Alpine Linux 系统
 - 请参考这里: https://wiki.friendlyelec.com/wiki/index.php/Getting_Started_with_Alpine-Linux/zh
 ### 更新说明
-* 2025/06/05
+* 2025/06/06
     *  增加 NanoPi-M5 支持
     *  更新版本到 v3.22
 * 2025/03/14 首次发布
