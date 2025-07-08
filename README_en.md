@@ -7,6 +7,8 @@ This project provides a way to build Alpine Linux system that can run directly o
 - Login: Serial terminal and SSH login are enabled
 ### Running the Alpine from TF Card
 Download the image file with “-sd-” in the name, use your preferred flashing tool to write the image file to the TF card, then insert the TF card into the development board. Power on the board, and the Alpine Linux system will start.
+### Flashing the Alpine to eMMC
+Download the image file with “-eflasher-” in the name, use your preferred flashing tool to write the image file to the TF card, then insert the TF card into the development board. Power on the board, and it will automatically flash the system to eMMC. After flashing is complete, removing the TF card will trigger an automatic reboot and boot into the Alpine Linux system on eMMC.
 ### Customizing Alpine Linux
 - Please refer to this link: https://wiki.friendlyelec.com/wiki/index.php/Getting_Started_with_Alpine-Linux
 ### Release Notes
