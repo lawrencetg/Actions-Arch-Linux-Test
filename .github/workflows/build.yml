@@ -1,0 +1,67 @@
+on:
+  watch:
+    types: started
+jobs:
+  prepare_release:
+    runs-on: ubuntu-22.04
+    if: github.event.repository.owner.id == github.event.sender.id
+    steps:
+    - name: Get release tag
+      id: release_tag
+      run: |
+        release_tag="Alpine-$(date +%Y-%m-%d)"
+        echo "##[set-output name=release_tag;]$release_tag"
+
+    - name: Create empty release
+      id: release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.release_tag.outputs.release_tag }}
+        draft: false
+        prerelease: false
+    outputs:
+      release_tag: ${{ steps.release_tag.outputs.release_tag }}
+      upload_url: ${{ steps.release.outputs.upload_url }}
+
+  test_dev:
+    needs: prepare_release
+    runs-on: ubuntu-22.04
+    if: github.event.repository.owner.id == github.event.sender.id
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d
+        wget https://raw.githubusercontent.com/friendlyarm/build-env-on-ubuntu-bionic/master/install.sh
+        sed -i -e 's/^apt-get -y install openjdk-8-jdk/# apt-get -y install openjdk-8-jdk/g' install.sh
+        sed -i -e 's/^\[ -d fa-toolchain \]/# [ -d fa-toolchain ]/g' install.sh
+        sed -i -e 's/^(cat fa-toolchain/# (cat fa-toolchain/g' install.sh
+        sed -i -e 's/^(tar xf fa-toolchain/# (tar xf fa-toolchain/g' install.sh
+        sudo -E bash ./install.sh
+        sudo -E git config --global user.name 'GitHub Actions'
+        sudo -E git config --global user.email 'noreply@github.com'
+        mkdir -p ./artifact
+        sudo swapoff -a
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk /usr/local/share/boost /opt/ghc
+        echo "cores: $(nproc)"
+
+        if ! command -v mount.exfat-fuse >/dev/null 2>&1 && \
+          ! command -v mount.exfat >/dev/null 2>&1; then
+          echo >&2 "Error: neither mount.exfat-fuse nor mount.exfat is installed."
+          exit 1
+        fi
+        if ! command -v mkfs.exfat >/dev/null 2>&1; then
+          echo >&2 "Error: mkfs.exfat is not installed."
+          exit 1
+        fi
+
+        sudo apt update
+        sudo apt install -y exfat-fuse exfatprogs
+
+        sudo scripts/test_exfat_loop.sh
