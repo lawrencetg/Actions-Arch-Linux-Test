@@ -51,6 +51,16 @@ jobs:
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk /usr/local/share/boost /opt/ghc
         echo "cores: $(nproc)"
 
+        if ! command -v mount.exfat-fuse >/dev/null 2>&1 && \
+          ! command -v mount.exfat >/dev/null 2>&1; then
+          echo >&2 "Error: neither mount.exfat-fuse nor mount.exfat is installed."
+          exit 1
+        fi
+        if ! command -v mkfs.exfat >/dev/null 2>&1; then
+          echo >&2 "Error: mkfs.exfat is not installed."
+          exit 1
+        fi
+
     - name: Download alpine-minirootfs
       run: |
         mkdir project
@@ -100,7 +110,7 @@ jobs:
 
     strategy:
       matrix:
-        CPU: [rk3328, rk3528, rk3399, rk3566, rk3568, rk3576, rk3588]
+        CPU: [rk3576]
     steps:
     - name: Checkout
       uses: actions/checkout@main
@@ -126,6 +136,16 @@ jobs:
         cd prebuilts/gcc-x64
         sudo tar xf toolchain-11.3-aarch64.tar.xz -C /
 
+        if ! command -v mount.exfat-fuse >/dev/null 2>&1 && \
+          ! command -v mount.exfat >/dev/null 2>&1; then
+          echo >&2 "Error: neither mount.exfat-fuse nor mount.exfat is installed."
+          exit 1
+        fi
+        if ! command -v mkfs.exfat >/dev/null 2>&1; then
+          echo >&2 "Error: mkfs.exfat is not installed."
+          exit 1
+        fi
+
     - name: Download alpine rootfs
       uses: robinraju/release-downloader@v1.6
       env:
@@ -141,31 +161,7 @@ jobs:
         mkdir project
         cd project
         case ${{ matrix.CPU }} in
-        rk3328)
-          BRANCH=kernel-6.6.y
-          KERNEL_VARIANT=mainline
-          ;;
-        rk3528)
-          BRANCH=kernel-6.1.y
-          KERNEL_VARIANT=vendor
-          ;;
-        rk3399)
-          BRANCH=kernel-6.6.y
-          KERNEL_VARIANT=mainline
-          ;;
-        rk3568)
-          BRANCH=kernel-6.1.y
-          KERNEL_VARIANT=vendor
-          ;;
-        rk3566)
-          BRANCH=kernel-6.1.y
-          KERNEL_VARIANT=vendor
-          ;;
         rk3576)
-          BRANCH=kernel-6.1.y
-          KERNEL_VARIANT=vendor
-          ;;
-        rk3588)
           BRANCH=kernel-6.1.y
           KERNEL_VARIANT=vendor
           ;;
@@ -200,7 +196,7 @@ jobs:
           UBOOT_SRC=uboot ./build-uboot.sh ${OS_DIR}
 
           # build kernel
-          DISABLE_MKIMG=1 KERNEL_SRC=kernel ./build-kernel.sh ${OS_DIR}
+          DISABLE_MKIMG=1 KERNEL_SRC=kernel BUILD_THIRD_PARTY_DRIVER=0 ./build-kernel.sh ${OS_DIR}
           TMP_DIR=$(mktemp -d out/boot.XXXXXXXXX)
           ./tools/setup_boot_and_rootfs.sh uboot kernel ${TMP_DIR} rootfs ./prebuilt ${OS_DIR}
 
@@ -266,4 +262,3 @@ jobs:
         asset_name: ${{ steps.build_sd_image.outputs.img_filename_sd2emmc }}.gz
         tag: ${{ needs.prepare_release.outputs.release_tag }}
         overwrite: true
-
